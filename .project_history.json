@@ -139,7 +139,7 @@
   "deployment": {
     "status": "deployed",
     "message": "Deployment is live at https://ai-project13.onrender.com",
-    "updated_at": "2026-10-20T14:37:11.415983+00:00",
+    "updated_at": "2026-10-20T14:48:51.361079+00:00",
     "neon": {
       "success": true,
       "connection_uri": "postgresql://neondb_owner:npg_BbAMsq7ESlN2@ep-cold-lab-b5p4aexk-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
@@ -166,7 +166,7 @@
     "render": {
       "success": true,
       "service_id": "srv-dbbn6m6i0phs73ei0a2g",
-      "deploy_id": "dep-dbbnoq0u01pc73edb4cg",
+      "deploy_id": "dep-dbbnu48473hc73cvv78g",
       "service_name": "ai-project13",
       "url": "https://ai-project13.onrender.com",
       "dashboard_url": "https://dashboard.render.com/web/srv-dbbn6m6i0phs73ei0a2g"
@@ -175,6 +175,6 @@
   },
   "status": "failed",
   "created_at": "2026-10-20T13:06:03.922113+00:00",
-  "updated_at": "2026-10-20T14:37:11.481247+00:00",
+  "updated_at": "2026-10-20T14:48:51.361079+00:00",
   "error": "Project generation failed: [WinError 5] Access is denied: 'D:\\\\html.siri\\\\AI-Software-Engineering-Platform\\\\generated_projects\\\\project13' -> 'D:\\\\html.siri\\\\AI-Software-Engineering-Platform\\\\generated_projects\\\\.project-backup-gw6l445s'"
 }
