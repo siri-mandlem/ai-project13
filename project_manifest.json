@@ -1,0 +1,83 @@
+{
+  "manifest_version": 1,
+  "project_name": "CarePoint Hospital Management System",
+  "backend": {
+    "framework": "Flask",
+    "application": "backend.app:app",
+    "files": [
+      "backend/__init__.py",
+      "backend/app.py",
+      "backend/auth.py",
+      "backend/config.py",
+      "backend/extensions.py",
+      "backend/models.py",
+      "backend/requirements.txt",
+      "backend/routes.py"
+    ]
+  },
+  "frontend": {
+    "technology": "HTML, CSS, JavaScript",
+    "entrypoint": "frontend/index.html",
+    "files": [
+      "frontend/index.html",
+      "frontend/css/style.css",
+      "frontend/js/script.js"
+    ],
+    "pages": [
+      "/"
+    ]
+  },
+  "database": {
+    "engine": "PostgreSQL",
+    "schema_file": "database/schema.sql",
+    "tables": [
+      "users",
+      "appointments",
+      "medical_records"
+    ]
+  },
+  "api_contracts": [
+    "POST /api/auth/register",
+    "POST /api/auth/login",
+    "POST /api/auth/logout",
+    "GET /api/auth/me",
+    "GET /api/doctors",
+    "POST /api/doctors",
+    "GET /api/appointments",
+    "POST /api/appointments",
+    "PATCH /api/appointments/<id>",
+    "GET /api/records",
+    "POST /api/records",
+    "GET /api/admin/summary",
+    "GET /health",
+    "GET /ready"
+  ],
+  "dependencies": [
+    "Flask",
+    "Flask-Cors",
+    "Flask-SQLAlchemy",
+    "gunicorn",
+    "psycopg2-binary",
+    "python-dotenv"
+  ],
+  "required_files": [
+    ".env.example",
+    ".gitignore",
+    "README.md",
+    "backend/__init__.py",
+    "backend/app.py",
+    "backend/auth.py",
+    "backend/config.py",
+    "backend/extensions.py",
+    "backend/models.py",
+    "backend/requirements.txt",
+    "backend/routes.py",
+    "database/schema.sql",
+    "frontend/index.html",
+    "frontend/css/style.css",
+    "frontend/js/script.js",
+    "project_manifest.json",
+    "render.yaml",
+    "tests/test_smoke.py"
+  ]
+}

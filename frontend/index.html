@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Hospital appointments and care coordination portal">
+  <title>CarePoint | Hospital Management</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <script src="/assets/js/script.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="CarePoint home"><span class="brand-mark">+</span> CarePoint</a>
+    <div id="userBar" class="user-bar" hidden>
+      <span id="welcomeText"></span>
+      <button id="logoutButton" class="button button-quiet" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">HOSPITAL CARE, CONNECTED</p>
+        <h1>Care that keeps<br><span>everything in view.</span></h1>
+        <p class="hero-copy">Manage appointments and coordinate care with a secure portal for patients, doctors, and hospital administrators.</p>
+      </div>
+      <div class="hero-card" aria-hidden="true">
+        <span class="hero-icon">✚</span>
+        <strong>Care, coordinated.</strong>
+        <span>Appointments · Providers · Records</span>
+      </div>
+    </section>
+
+    <section id="authSection" class="auth-layout">
+      <div class="auth-intro">
+        <p class="eyebrow">WELCOME TO CAREPOINT</p>
+        <h2>Your care team,<br>all in one place.</h2>
+        <p>Patients can create an account and request an appointment. Your care team will keep your appointment and records up to date.</p>
+        <div class="auth-note"><span aria-hidden="true">✓</span> Private account access for every role</div>
+      </div>
+      <div class="panel auth-panel">
+        <div class="auth-tabs" role="tablist" aria-label="Account access">
+          <button class="auth-tab active" id="loginTab" type="button" role="tab" aria-selected="true">Sign in</button>
+          <button class="auth-tab" id="registerTab" type="button" role="tab" aria-selected="false">Patient registration</button>
+        </div>
+        <form id="loginForm" class="form-stack">
+          <label>Email address<input name="email" type="email" autocomplete="username" required maxlength="254"></label>
+          <label>Password<input name="password" type="password" autocomplete="current-password" required minlength="12"></label>
+          <button class="button button-primary" type="submit">Sign in securely</button>
+        </form>
+        <form id="registerForm" class="form-stack" hidden>
+          <label>Full name<input name="name" autocomplete="name" required maxlength="120"></label>
+          <label>Email address<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+          <label>Phone <span class="optional">(optional)</span><input name="phone" type="tel" autocomplete="tel" maxlength="40"></label>
+          <label>Create password<input name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="256"><small>Use at least 12 characters.</small></label>
+          <button class="button button-primary" type="submit">Create patient account</button>
+        </form>
+        <p id="authMessage" class="notice" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="dashboardSection" hidden>
+      <div class="section-heading">
+        <div><p class="eyebrow">YOUR CARE WORKSPACE</p><h2 id="dashboardTitle">Dashboard</h2></div>
+        <button id="refreshButton" class="button button-outline" type="button">Refresh</button>
+      </div>
+      <p id="dashboardMessage" class="notice" role="status" aria-live="polite"></p>
+
+      <section id="summarySection" class="summary-grid" hidden aria-label="Hospital overview"></section>
+
+      <div class="workspace-grid">
+        <section id="appointmentFormPanel" class="panel" hidden>
+          <div class="panel-heading"><span class="panel-icon">＋</span><div><h3>Request an appointment</h3><p>Choose a provider and a future date.</p></div></div>
+          <form id="appointmentForm" class="form-stack">
+            <label>Doctor<select id="doctorSelect" name="doctor_id" required></select></label>
+            <label>Date and time<input name="scheduled_at" type="datetime-local" required></label>
+            <label>Reason for visit<textarea name="reason" rows="3" maxlength="500" required></textarea></label>
+            <button class="button button-primary" type="submit">Request appointment</button>
+          </form>
+        </section>
+
+        <section id="doctorFormPanel" class="panel" hidden>
+          <div class="panel-heading"><span class="panel-icon">＋</span><div><h3>Add a doctor</h3><p>Create a provider account from the administrator workspace.</p></div></div>
+          <form id="doctorForm" class="form-stack">
+            <label>Full name<input name="name" required maxlength="120"></label>
+            <label>Email address<input name="email" type="email" required maxlength="254"></label>
+            <label>Specialty<input name="specialty" required maxlength="120"></label>
+            <label>Initial password<input name="password" type="password" required minlength="12" maxlength="256"><small>Share initial sign-in details securely.</small></label>
+            <button class="button button-primary" type="submit">Create doctor account</button>
+          </form>
+        </section>
+
+        <section id="recordFormPanel" class="panel" hidden>
+          <div class="panel-heading"><span class="panel-icon">＋</span><div><h3>Add a medical record</h3><p>Save a diagnosis for one of your completed or confirmed appointments.</p></div></div>
+          <form id="recordForm" class="form-stack">
+            <label>Appointment<select id="recordAppointmentSelect" name="appointment_id" required></select></label>
+            <label>Diagnosis<input name="diagnosis" required maxlength="500"></label>
+            <label>Clinical notes<textarea name="notes" rows="4" maxlength="10000"></textarea></label>
+            <button class="button button-primary" type="submit">Save medical record</button>
+          </form>
+        </section>
+      </div>
+
+      <section class="panel data-panel">
+        <div class="panel-heading"><span class="panel-icon">◷</span><div><h3>Appointments</h3><p>Appointment details and current status.</p></div></div>
+        <div class="table-scroll"><table><thead><tr><th>Patient</th><th>Doctor</th><th>Date and time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead><tbody id="appointmentsBody"></tbody></table></div>
+        <p id="appointmentsEmpty" class="empty-state" hidden>No appointments to show yet.</p>
+      </section>
+
+      <section class="panel data-panel">
+        <div class="panel-heading"><span class="panel-icon">▤</span><div><h3>Medical records</h3><p>Access is limited by your account role.</p></div></div>
+        <div class="table-scroll"><table><thead><tr><th>Patient</th><th>Doctor</th><th>Appointment</th><th>Diagnosis</th><th>Notes</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+        <p id="recordsEmpty" class="empty-state" hidden>No medical records to show yet.</p>
+      </section>
+    </section>
+
+    <section class="provider-section">
+      <div class="section-heading"><div><p class="eyebrow">CARE TEAM</p><h2>Meet our doctors</h2></div></div>
+      <div id="doctorCards" class="doctor-grid"></div>
+      <p id="doctorEmpty" class="empty-state" hidden>No doctors have been added yet.</p>
+    </section>
+    <footer><span>CarePoint Hospital Management</span><span>Use only with authorized accounts and appropriate privacy safeguards.</span></footer>
+  </main>
+</body>
+</html>

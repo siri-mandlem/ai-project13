@@ -1,0 +1,144 @@
+{
+  "project_id": "project13",
+  "title": "Build a Hospital Management System where patients can register, doctors can mana",
+  "prompt": "Build a Hospital Management System where patients can register, doctors can manage appointments and administrators can monitor hospital records.",
+  "requirements": "## Functional Requirements\n- Patient registration and management.\n- Doctor appointment scheduling and management.\n- Administrator record monitoring and control.\n\n## Non-Functional Requirements\n- Performance: High availability, low response time, scalability.\n- Security: Data encryption, access control, secure authentication.\n- Usability: Intuitive interface, error handling, user guidance.\n\n## Actors\n- Patients\n- Doctors\n- Administrators\n\n## Modules\n- Patient Management Module\n- Appointment Management Module\n- Record Monitoring Module",
+  "architecture": {
+    "architecture_diagram": "graph LR\n\nPatient --> PatientManagementModule\n\nDoctor --> AppointmentManagementModule\n\nAdmin --> RecordMonitoringModule\n\nPatientManagementModule --> Authentication\n\nAppointmentManagementModule --> Authentication\n\nRecordMonitoringModule --> Authentication\n\nAuthentication --> PostgreSQL"
+  },
+  "database": {
+    "tables": [
+      {
+        "table_name": "patients",
+        "columns": [
+          {
+            "name": "id",
+            "type": "SERIAL",
+            "primary_key": true,
+            "foreign_key": ""
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": ""
+          }
+        ]
+      },
+      {
+        "table_name": "appointments",
+        "columns": [
+          {
+            "name": "id",
+            "type": "SERIAL",
+            "primary_key": true,
+            "foreign_key": "patients.id"
+          },
+          {
+            "name": "patient_id",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": "patients.id"
+          },
+          {
+            "name": "doctor_id",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": "doctors.id"
+          },
+          {
+            "name": "date",
+            "type": "DATE",
+            "primary_key": false,
+            "foreign_key": ""
+          }
+        ]
+      },
+      {
+        "table_name": "doctors",
+        "columns": [
+          {
+            "name": "id",
+            "type": "SERIAL",
+            "primary_key": true,
+            "foreign_key": ""
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": ""
+          }
+        ]
+      },
+      {
+        "table_name": "records",
+        "columns": [
+          {
+            "name": "id",
+            "type": "SERIAL",
+            "primary_key": true,
+            "foreign_key": ""
+          },
+          {
+            "name": "patient_id",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": "patients.id"
+          },
+          {
+            "name": "doctor_id",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": "doctors.id"
+          },
+          {
+            "name": "date",
+            "type": "DATE",
+            "primary_key": false,
+            "foreign_key": ""
+          }
+        ]
+      },
+      {
+        "table_name": "authentication",
+        "columns": [
+          {
+            "name": "id",
+            "type": "SERIAL",
+            "primary_key": true,
+            "foreign_key": ""
+          },
+          {
+            "name": "username",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": ""
+          },
+          {
+            "name": "password",
+            "type": "VARCHAR(100)",
+            "primary_key": false,
+            "foreign_key": ""
+          }
+        ]
+      }
+    ],
+    "erd": "erDiagram\n\nPATIENTS {\n        int id PK\n        string name\n}\n\nAPPOINTMENTS {\n        int id PK\n        string patient_id FK\n        string doctor_id FK\n        datetime date\n}\n\nDOCTORS {\n        int id PK\n        string name\n}\n\nRECORDS {\n        int id PK\n        string patient_id FK\n        string doctor_id FK\n        datetime date\n}\n\nAUTHENTICATION {\n        int id PK\n        string username\n        string password\n}\n\nPATIENTS ||--o{ APPOINTMENTS : id\n\nPATIENTS ||--o{ APPOINTMENTS : patient_id\n\nDOCTORS ||--o{ APPOINTMENTS : doctor_id\n\nPATIENTS ||--o{ RECORDS : patient_id\n\nDOCTORS ||--o{ RECORDS : doctor_id",
+    "sql_schema": "CREATE TABLE \"patients\" (\n    \"id\" SERIAL,\n    \"name\" VARCHAR(100),\n    PRIMARY KEY (\"id\")\n);\n\nCREATE TABLE \"appointments\" (\n    \"id\" SERIAL,\n    \"patient_id\" VARCHAR(100),\n    \"doctor_id\" VARCHAR(100),\n    \"date\" DATE,\n    PRIMARY KEY (\"id\")\n);\n\nCREATE TABLE \"doctors\" (\n    \"id\" SERIAL,\n    \"name\" VARCHAR(100),\n    PRIMARY KEY (\"id\")\n);\n\nCREATE TABLE \"records\" (\n    \"id\" SERIAL,\n    \"patient_id\" VARCHAR(100),\n    \"doctor_id\" VARCHAR(100),\n    \"date\" DATE,\n    PRIMARY KEY (\"id\")\n);\n\nCREATE TABLE \"authentication\" (\n    \"id\" SERIAL,\n    \"username\" VARCHAR(100),\n    \"password\" VARCHAR(100),\n    PRIMARY KEY (\"id\")\n);\n\nALTER TABLE \"appointments\" ADD FOREIGN KEY (\"id\") REFERENCES \"patients\" (\"id\");\n\nALTER TABLE \"appointments\" ADD FOREIGN KEY (\"patient_id\") REFERENCES \"patients\" (\"id\");\n\nALTER TABLE \"appointments\" ADD FOREIGN KEY (\"doctor_id\") REFERENCES \"doctors\" (\"id\");\n\nALTER TABLE \"records\" ADD FOREIGN KEY (\"patient_id\") REFERENCES \"patients\" (\"id\");\n\nALTER TABLE \"records\" ADD FOREIGN KEY (\"doctor_id\") REFERENCES \"doctors\" (\"id\");"
+  },
+  "backend": {
+    "structure": "1. Backend Technology Stack:\n   - Python (Django or FastAPI)\n   - PostgreSQL\n   - Redis (for caching)\n   - SSL/TLS for secure communication\n   - Docker for containerization\n   - Kubernetes for orchestration\n   - AWS or GCP for cloud infrastructure\n\n2. Backend Folder Structure:\n   - config\n   - migrations\n   - models\n   - serializers\n   - services\n   - views\n   - auth\n   - patients\n   - appointments\n   - doctors\n   - records\n   - tests\n   - utils\n   - static\n   - templates\n\n3. Backend Modules:\n   - Authentication Module\n   - Patient Management Module\n   - Appointment Management Module\n   - Record Monitoring Module"
+  },
+  "frontend": {
+    "tech_stack": "HTML\nCSS\nJavaScript",
+    "structure": "1. Frontend Technology Stack:\n   - React.js\n   - Redux for state management\n   - Axios for HTTP requests\n   - Bootstrap for UI components\n   - Material-UI for UI components\n   - JWT for authentication\n   - Webpack for bundling\n   - ESLint for code linting\n   - Prettier for code formatting\n\n2. Frontend Folder Structure:\n   - config\n   - components\n   - containers\n   - pages\n   - services\n   - utils\n   - static\n   - templates\n   - styles\n   - tests\n   - auth\n   - patients\n   - appointments\n   - doctors\n   - records\n\n3. Frontend Pages:\n   - Login Page\n   - Register Page\n   - Dashboard Page\n   - Patient Management Page\n   - Doctor Management Page\n   - Appointment Management Page\n   - Record Monitoring Page\n   - Profile Page\n   - Settings Page",
+    "pages": "1. login.html - User login page\n2. register.html - User registration page\n3. dashboard.html - Patient/Doctor/Admin dashboard\n4. appointment.html - Appointment booking page\n5. appointment-list.html - Appointment list page\n6. patient-profile.html - Patient profile page\n7. doctor-profile.html - Doctor profile page\n8. record-monitoring.html - Record monitoring page"
+  },
+  "project": {},
+  "deployment": {},
+  "status": "failed",
+  "created_at": "2026-10-20T13:06:03.922113+00:00",
+  "updated_at": "2026-10-20T13:27:36.444839+00:00",
+  "error": "Project generation failed: [WinError 5] Access is denied: 'D:\\\\html.siri\\\\AI-Software-Engineering-Platform\\\\generated_projects\\\\project13' -> 'D:\\\\html.siri\\\\AI-Software-Engineering-Platform\\\\generated_projects\\\\.project-backup-gw6l445s'"
+}

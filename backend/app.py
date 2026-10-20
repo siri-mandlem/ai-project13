@@ -1,0 +1,152 @@
+import logging
+import os
+import secrets
+from datetime import timedelta
+from pathlib import Path
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify, send_from_directory
+from flask_cors import CORS
+from sqlalchemy import select, text
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import generate_password_hash
+
+from backend.config import cors_origins
+from backend.extensions import db
+from backend.models import User
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+FRONTEND_ROOT = PROJECT_ROOT / "frontend"
+load_dotenv(PROJECT_ROOT / ".env")
+
+
+def _database_uri() -> str:
+    configured_uri = os.environ.get("DATABASE_URL", "").strip()
+    production = (
+        os.environ.get("APP_ENV", "").lower() == "production"
+        or os.environ.get("RENDER", "").lower() == "true"
+    )
+    if not configured_uri:
+        if production:
+            raise RuntimeError("DATABASE_URL must be configured in production.")
+        instance_dir = PROJECT_ROOT / "instance"
+        instance_dir.mkdir(parents=True, exist_ok=True)
+        return f"sqlite:///{instance_dir / 'hospital.sqlite3'}"
+
+    url = make_url(configured_uri)
+    if url.drivername == "postgres":
+        url = url.set(drivername="postgresql")
+    if url.host and url.host.endswith(".neon.tech") and "sslmode" not in url.query:
+        url = url.update_query_dict({"sslmode": "require"})
+    return url.render_as_string(hide_password=False)
+
+
+def _seed_admin() -> None:
+    email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    password = os.environ.get("ADMIN_PASSWORD", "")
+    if not email and not password:
+        return
+    if not email or "@" not in email or len(password) < 12:
+        raise RuntimeError(
+            "Set both ADMIN_EMAIL and ADMIN_PASSWORD; the password must be at least 12 characters."
+        )
+
+    existing = db.session.scalar(select(User).where(User.email == email))
+    if existing is not None:
+        if existing.role != "admin":
+            raise RuntimeError("ADMIN_EMAIL is already registered to a non-admin account.")
+        return
+
+    admin = User(
+        name=os.environ.get("ADMIN_NAME", "Hospital Administrator").strip()
+        or "Hospital Administrator",
+        email=email,
+        password_hash=generate_password_hash(password),
+        role="admin",
+    )
+    db.session.add(admin)
+    db.session.commit()
+
+
+def create_app(test_config: dict | None = None) -> Flask:
+    app = Flask(__name__, instance_path=str(PROJECT_ROOT / "instance"))
+    Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+    production = (
+        os.environ.get("APP_ENV", "").lower() == "production"
+        or os.environ.get("RENDER", "").lower() == "true"
+    )
+    secret_key = os.environ.get("SECRET_KEY", "").strip()
+    if production and not secret_key:
+        raise RuntimeError("SECRET_KEY must be configured in production.")
+    app.config.update(
+        SECRET_KEY=secret_key or secrets.token_urlsafe(32),
+        SQLALCHEMY_DATABASE_URI=_database_uri(),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True},
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=production,
+        PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+        MAX_CONTENT_LENGTH=1024 * 1024,
+    )
+    if test_config:
+        app.config.update(test_config)
+
+    db.init_app(app)
+    origins = cors_origins()
+    if origins:
+        CORS(
+            app,
+            resources={r"/api/*": {"origins": origins}},
+            supports_credentials=True,
+        )
+
+    from backend.routes import api
+
+    app.register_blueprint(api)
+
+    @app.get("/")
+    def index():
+        return send_from_directory(FRONTEND_ROOT, "index.html")
+
+    @app.get("/assets/<path:filename>")
+    def assets(filename: str):
+        return send_from_directory(FRONTEND_ROOT, filename)
+
+    @app.get("/health")
+    def health():
+        return jsonify({"status": "ok"})
+
+    @app.get("/ready")
+    def ready():
+        db.session.execute(text("SELECT 1"))
+        return jsonify({"status": "ready"})
+
+    @app.errorhandler(SQLAlchemyError)
+    def handle_database_error(error):
+        db.session.rollback()
+        app.logger.exception("Database operation failed")
+        if app.config.get("TESTING"):
+            raise error
+        return jsonify({"error": "The database request could not be completed."}), 503
+
+    with app.app_context():
+        db.create_all()
+        _seed_admin()
+
+    if not production:
+        app.logger.setLevel(logging.INFO)
+    return app
+
+
+app = create_app()
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "5000")),
+        debug=False,
+    )
