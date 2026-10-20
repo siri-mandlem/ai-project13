@@ -27,28 +27,39 @@ def _database_uri() -> str:
     configured_uri = os.environ.get("DATABASE_URL", "").strip()
 
     if not configured_uri:
-        raise RuntimeError(
-            "DATABASE_URL is missing. Configure your Neon PostgreSQL "
-            "connection string in the project's .env file."
+        production = (
+            os.environ.get("APP_ENV", "").lower() == "production"
+            or os.environ.get("RENDER", "").lower() == "true"
         )
+        if production:
+            raise RuntimeError(
+                "DATABASE_URL is missing. Configure the Neon PostgreSQL "
+                "connection string in the deployment environment."
+            )
+        return "sqlite:///instance/hospital.sqlite3"
 
     url = make_url(configured_uri)
 
     if url.drivername in {"postgres", "postgresql"}:
         url = url.set(drivername="postgresql+psycopg2")
 
-    if url.drivername != "postgresql+psycopg2":
+    if url.drivername not in {"postgresql+psycopg2", "sqlite"}:
         raise RuntimeError(
-            "This application requires PostgreSQL. "
+            "This application requires PostgreSQL in production (SQLite is "
+            "supported for local development). "
             "Check your DATABASE_URL."
         )
 
-    if not url.host or not url.host.endswith(".neon.tech"):
+    production = (
+        os.environ.get("APP_ENV", "").lower() == "production"
+        or os.environ.get("RENDER", "").lower() == "true"
+    )
+    if production and url.drivername != "postgresql+psycopg2":
         raise RuntimeError(
-            "DATABASE_URL must point to your Neon PostgreSQL host."
+            "Production DATABASE_URL must point to a PostgreSQL database."
         )
 
-    if "sslmode" not in url.query:
+    if url.drivername == "postgresql+psycopg2" and "sslmode" not in url.query:
         url = url.update_query_dict({"sslmode": "require"})
 
     return url.render_as_string(hide_password=False)

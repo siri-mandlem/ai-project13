@@ -110,6 +110,17 @@ class HospitalApplicationTests(unittest.TestCase):
             uri = _database_uri()
         self.assertEqual(make_url(uri).drivername, "postgresql+psycopg2")
         self.assertTrue(uri.startswith("postgresql+psycopg2://"))
+
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(_database_uri(), "sqlite:///instance/hospital.sqlite3")
+
+        with patch.dict(
+            "os.environ",
+            {"APP_ENV": "production", "DATABASE_URL": "sqlite:///instance/test.db"},
+            clear=True,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "PostgreSQL"):
+                _database_uri()
         self.assertIn("sslmode=require", uri)
 
         with patch.dict(
