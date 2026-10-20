@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import make_url
 
 from backend.app import _database_uri, create_app
@@ -101,6 +102,38 @@ class HospitalApplicationTests(unittest.TestCase):
         ):
             uri = _database_uri()
         self.assertTrue(uri.startswith("postgresql+psycopg2://"))
+
+    def test_startup_adds_missing_optional_columns_to_legacy_users_table(self):
+        def create_legacy_users_table():
+            with db.engine.begin() as connection:
+                connection.execute(text("""
+                    CREATE TABLE users (
+                        id INTEGER PRIMARY KEY,
+                        name VARCHAR(120) NOT NULL,
+                        email VARCHAR(254) NOT NULL UNIQUE,
+                        password_hash VARCHAR(256) NOT NULL,
+                        role VARCHAR(20) NOT NULL,
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                        created_at DATETIME NOT NULL
+                    )
+                """))
+
+        with patch.object(db, "create_all", side_effect=create_legacy_users_table):
+            legacy_app = create_app({
+                "TESTING": True,
+                "SECRET_KEY": "test-secret-key",
+                "SQLALCHEMY_DATABASE_URI": "sqlite://",
+                "SQLALCHEMY_ENGINE_OPTIONS": {},
+            })
+        with legacy_app.app_context():
+            columns = {
+                column["name"] for column in inspect(db.engine).get_columns("users")
+            }
+        self.assertIn("phone", columns)
+        self.assertIn("specialty", columns)
+        response = legacy_app.test_client().get("/api/doctors")
+        self.assertEqual(response.status_code, 200)
+        response.close()
 
     def test_patient_registration_and_role_restrictions(self):
         response = self.client.post(

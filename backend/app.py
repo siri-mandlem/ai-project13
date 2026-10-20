@@ -7,7 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
-from sqlalchemy import select, text
+from sqlalchemy import inspect, select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash
@@ -68,6 +68,32 @@ def _seed_admin() -> None:
     )
     db.session.add(admin)
     db.session.commit()
+
+
+def _upgrade_legacy_user_columns() -> None:
+    inspector = inspect(db.engine)
+    if not inspector.has_table("users"):
+        return
+    existing_columns = {
+        column["name"] for column in inspector.get_columns("users")
+    }
+    missing_columns = {
+        "phone": "VARCHAR(40)",
+        "specialty": "VARCHAR(120)",
+    }
+    dialect = db.engine.dialect.name
+    with db.engine.begin() as connection:
+        for column_name, column_type in missing_columns.items():
+            if column_name in existing_columns:
+                continue
+            if dialect == "postgresql":
+                connection.execute(text(
+                    f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {column_name} {column_type}"
+                ))
+            else:
+                connection.execute(text(
+                    f"ALTER TABLE users ADD COLUMN {column_name} {column_type}"
+                ))
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -134,6 +160,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     with app.app_context():
         db.create_all()
+        _upgrade_legacy_user_columns()
         _seed_admin()
 
     if not production:

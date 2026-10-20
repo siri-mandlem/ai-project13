@@ -31,7 +31,7 @@ A Flask and PostgreSQL hospital portal with patient registration, doctor-managed
 
 6. Open `http://127.0.0.1:5000`. Patients can register in the UI. Doctor accounts are created by an administrator.
 
-The server creates missing application tables at startup. `database/schema.sql` documents the PostgreSQL schema and can also be applied manually to a fresh Neon database; do not apply it over an existing schema without checking for conflicts.
+The server creates missing application tables at startup and adds the optional `phone` and `specialty` columns when upgrading an older `users` table. `database/schema.sql` documents the PostgreSQL schema and can also be applied manually to a fresh Neon database; do not apply it over an existing schema without checking for conflicts.
 
 ## Run tests
 

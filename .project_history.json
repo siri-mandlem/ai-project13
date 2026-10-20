@@ -137,12 +137,44 @@
   },
   "project": {},
   "deployment": {
-    "status": "failed",
-    "message": "Render deployment failed with status 'update_failed'. View build logs in the Render dashboard: https://dashboard.render.com/web/srv-dbbn6m6i0phs73ei0a2g\nRecent Render app output:\n\u001b[0;34m\u001b[1m==> \u001b[0m\u001b[1mCommon ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys\u001b[0m\n\u001b[0;31m\u001b[1m==> Exited with status 1\u001b[0m\n\u001b[32m\u001b[1m==>\u001b(B\u001b[m \u001b[1mRunning 'gunicorn --bind 0.0.0.0:$PORT backend.app:app'\u001b(B\u001b[m\n\u001b[0;34m\u001b[1m==> \u001b[0m\u001b[1mSetting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance\u001b[0m\n\u001b[0;34m\u001b[1m==> \u001b[0m\u001b[1mDeploying...\u001b[0m\nRecent Render build output:\n\u001b[32;1m==>\u001b[0;22m \u001b[1mBuild successful 🎉\u001b[22m\n\u001b[34;1m==>\u001b[0;22m \u001b[1mUploaded in 5.0s. Compression took 1.1s\u001b[22m\n\u001b[34;1m==>\u001b[0;22m \u001b[1mUploading build...\u001b[22m\n[notice] To update, run: pip install --upgrade pip\n[notice] A new release of pip is available: 24.0 -> 26.2.1\nSuccessfully installed Flask-3.1.3 Flask-Cors-5.0.1 Flask-SQLAlchemy-3.1.1 blinker-1.9.0 click-8.5.0 gunicorn-23.0.0 itsdangerous-2.2.0 jinja2-3.1.6 markupsafe-3.0.4 packaging-26.3 psycopg2-binary-2.9.13 python-dotenv-1.2.4 sqlalchemy-2.1.5 typing-extensions-4.16.0 werkzeug-3.1.9\nInstalling collected packages: typing-extensions, python-dotenv, psycopg2-binary, packaging, markupsafe, itsdangerous, click, blinker, werkzeug, sqlalchemy, jinja2, gunicorn, Flask, Flask-SQLAlchemy, Flask-Cors\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 22.4 MB/s eta 0:00:00\nDownloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 130.0/130.0 kB 56.3 MB/s eta 0:00:00\nDownloading packaging-26.3-py3-none-any.whl (129 kB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 228.7/228.7 kB 95.4 MB/s eta 0:00:00\nDownloading werkzeug-3.1.9-py3-none-any.whl (228 kB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.7/4.7 MB 271.3 MB/s eta 0:00:00\nDownloading sqlalchemy-2.1.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.7 MB)\nDownloading markupsafe-3.0.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.9/134.9 kB 60.0 MB/s eta 0:00:00\nDownloading jinja2-3.1.6-py3-none-any.whl (134 kB)\nDownloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)",
-    "updated_at": "2026-10-20T13:58:42.548788+00:00"
+    "status": "deployed",
+    "message": "Deployment is live at https://ai-project13.onrender.com",
+    "updated_at": "2026-10-20T14:04:07.844348+00:00",
+    "neon": {
+      "success": true,
+      "connection_uri": "postgresql://neondb_owner:npg_BbAMsq7ESlN2@ep-cold-lab-b5p4aexk-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+      "project_id": "",
+      "console_url": "https://console.neon.tech",
+      "tables": [
+        "appointments",
+        "book_loans",
+        "books",
+        "fines",
+        "issues",
+        "medical_records",
+        "searches",
+        "users"
+      ],
+      "table_count": 8
+    },
+    "github": {
+      "repo_name": "ai-project13",
+      "repo_url": "https://github.com/siri-mandlem/ai-project13",
+      "clone_url": "https://github.com/siri-mandlem/ai-project13.git",
+      "owner": "siri-mandlem"
+    },
+    "render": {
+      "success": true,
+      "service_id": "srv-dbbn6m6i0phs73ei0a2g",
+      "deploy_id": "dep-dbbn96u1egvs738jf3r0",
+      "service_name": "ai-project13",
+      "url": "https://ai-project13.onrender.com",
+      "dashboard_url": "https://dashboard.render.com/web/srv-dbbn6m6i0phs73ei0a2g"
+    },
+    "url": "https://ai-project13.onrender.com"
   },
   "status": "failed",
   "created_at": "2026-10-20T13:06:03.922113+00:00",
-  "updated_at": "2026-10-20T13:58:42.548788+00:00",
+  "updated_at": "2026-10-20T14:04:07.889623+00:00",
   "error": "Project generation failed: [WinError 5] Access is denied: 'D:\\\\html.siri\\\\AI-Software-Engineering-Platform\\\\generated_projects\\\\project13' -> 'D:\\\\html.siri\\\\AI-Software-Engineering-Platform\\\\generated_projects\\\\.project-backup-gw6l445s'"
 }
