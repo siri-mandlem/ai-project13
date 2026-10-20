@@ -19,6 +19,8 @@ from backend.models import User
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_ROOT = PROJECT_ROOT / "frontend"
+SCHEMA_PATH = PROJECT_ROOT / "schema.sql"
+
 load_dotenv(PROJECT_ROOT / ".env")
 
 
@@ -28,84 +30,155 @@ def _database_uri() -> str:
         os.environ.get("APP_ENV", "").lower() == "production"
         or os.environ.get("RENDER", "").lower() == "true"
     )
+
     if not configured_uri:
         if production:
             raise RuntimeError("DATABASE_URL must be configured in production.")
+
         instance_dir = PROJECT_ROOT / "instance"
         instance_dir.mkdir(parents=True, exist_ok=True)
         return f"sqlite:///{instance_dir / 'hospital.sqlite3'}"
 
     url = make_url(configured_uri)
+
     if url.drivername in {"postgres", "postgresql"}:
         url = url.set(drivername="postgresql+psycopg2")
+
     if url.host and url.host.endswith(".neon.tech") and "sslmode" not in url.query:
         url = url.update_query_dict({"sslmode": "require"})
+
     return url.render_as_string(hide_password=False)
+
+
+def _execute_schema() -> None:
+    """Execute schema.sql automatically when the application starts."""
+    if not SCHEMA_PATH.is_file():
+        raise RuntimeError(
+            f"Database schema file not found: {SCHEMA_PATH}"
+        )
+
+    dialect = db.engine.dialect.name
+
+    # The provided schema.sql uses PostgreSQL-specific syntax.
+    if dialect != "postgresql":
+        raise RuntimeError(
+            "schema.sql contains PostgreSQL-specific SQL. "
+            "Use the SQLAlchemy models for local SQLite development."
+        )
+
+    schema_sql = SCHEMA_PATH.read_text(encoding="utf-8").strip()
+
+    if not schema_sql:
+        raise RuntimeError("schema.sql is empty.")
+
+    # Run the complete script in one transaction. CREATE TABLE IF NOT EXISTS
+    # and ALTER TABLE ... ADD COLUMN IF NOT EXISTS preserve existing data.
+    with db.engine.begin() as connection:
+        raw_connection = connection.connection.driver_connection
+        with raw_connection.cursor() as cursor:
+            cursor.execute(schema_sql)
+
+
+def _upgrade_legacy_user_columns() -> None:
+    """Safely add columns missing from older users tables."""
+    inspector = inspect(db.engine)
+
+    if not inspector.has_table("users"):
+        return
+
+    existing_columns = {
+        column["name"] for column in inspector.get_columns("users")
+    }
+
+    missing_columns = {
+        "phone": "VARCHAR(40)",
+        "specialty": "VARCHAR(120)",
+        "is_active": "BOOLEAN NOT NULL DEFAULT TRUE",
+    }
+
+    dialect = db.engine.dialect.name
+
+    with db.engine.begin() as connection:
+        for column_name, column_type in missing_columns.items():
+            if column_name in existing_columns:
+                continue
+
+            if dialect == "postgresql":
+                connection.execute(
+                    text(
+                        f"ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+                        f"{column_name} {column_type}"
+                    )
+                )
+            elif dialect == "sqlite":
+                connection.execute(
+                    text(
+                        f"ALTER TABLE users ADD COLUMN "
+                        f"{column_name} {column_type}"
+                    )
+                )
+            else:
+                raise RuntimeError(
+                    f"Unsupported database dialect: {dialect}"
+                )
 
 
 def _seed_admin() -> None:
     email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     password = os.environ.get("ADMIN_PASSWORD", "")
+
     if not email and not password:
         return
+
     if not email or "@" not in email or len(password) < 12:
         raise RuntimeError(
-            "Set both ADMIN_EMAIL and ADMIN_PASSWORD; the password must be at least 12 characters."
+            "Set both ADMIN_EMAIL and ADMIN_PASSWORD; "
+            "the password must be at least 12 characters."
         )
 
-    existing = db.session.scalar(select(User).where(User.email == email))
+    existing = db.session.scalar(
+        select(User).where(User.email == email)
+    )
+
     if existing is not None:
         if existing.role != "admin":
-            raise RuntimeError("ADMIN_EMAIL is already registered to a non-admin account.")
+            raise RuntimeError(
+                "ADMIN_EMAIL is already registered to a non-admin account."
+            )
         return
 
     admin = User(
-        name=os.environ.get("ADMIN_NAME", "Hospital Administrator").strip()
-        or "Hospital Administrator",
+        name=os.environ.get(
+            "ADMIN_NAME", "Hospital Administrator"
+        ).strip() or "Hospital Administrator",
         email=email,
         password_hash=generate_password_hash(password),
         role="admin",
     )
+
     db.session.add(admin)
     db.session.commit()
 
 
-def _upgrade_legacy_user_columns() -> None:
-    inspector = inspect(db.engine)
-    if not inspector.has_table("users"):
-        return
-    existing_columns = {
-        column["name"] for column in inspector.get_columns("users")
-    }
-    missing_columns = {
-        "phone": "VARCHAR(40)",
-        "specialty": "VARCHAR(120)",
-    }
-    dialect = db.engine.dialect.name
-    with db.engine.begin() as connection:
-        for column_name, column_type in missing_columns.items():
-            if column_name in existing_columns:
-                continue
-            if dialect == "postgresql":
-                connection.execute(text(
-                    f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {column_name} {column_type}"
-                ))
-            else:
-                connection.execute(text(
-                    f"ALTER TABLE users ADD COLUMN {column_name} {column_type}"
-                ))
-
-
 def create_app(test_config: dict | None = None) -> Flask:
-    app = Flask(__name__, instance_path=str(PROJECT_ROOT / "instance"))
+    app = Flask(
+        __name__,
+        instance_path=str(PROJECT_ROOT / "instance"),
+    )
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
     production = (
         os.environ.get("APP_ENV", "").lower() == "production"
         or os.environ.get("RENDER", "").lower() == "true"
     )
+
     secret_key = os.environ.get("SECRET_KEY", "").strip()
+
     if production and not secret_key:
-        raise RuntimeError("SECRET_KEY must be configured in production.")
+        raise RuntimeError(
+            "SECRET_KEY must be configured in production."
+        )
+
     app.config.update(
         SECRET_KEY=secret_key or secrets.token_urlsafe(32),
         SQLALCHEMY_DATABASE_URI=_database_uri(),
@@ -117,10 +190,12 @@ def create_app(test_config: dict | None = None) -> Flask:
         PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
         MAX_CONTENT_LENGTH=1024 * 1024,
     )
+
     if test_config:
         app.config.update(test_config)
 
     db.init_app(app)
+
     origins = cors_origins()
     if origins:
         CORS(
@@ -130,7 +205,6 @@ def create_app(test_config: dict | None = None) -> Flask:
         )
 
     from backend.routes import api
-
     app.register_blueprint(api)
 
     @app.get("/")
@@ -154,17 +228,28 @@ def create_app(test_config: dict | None = None) -> Flask:
     def handle_database_error(error):
         db.session.rollback()
         app.logger.exception("Database operation failed")
+
         if app.config.get("TESTING"):
             raise error
-        return jsonify({"error": "The database request could not be completed."}), 503
+
+        return jsonify(
+            {"error": "The database request could not be completed."}
+        ), 503
 
     with app.app_context():
+        # Create any missing tables defined by the SQLAlchemy models.
         db.create_all()
+
+        # Apply the SQL file and safely add missing legacy columns.
+        _execute_schema()
         _upgrade_legacy_user_columns()
+
+        # Create the initial administrator if one does not exist.
         _seed_admin()
 
     if not production:
         app.logger.setLevel(logging.INFO)
+
     return app
 
 
