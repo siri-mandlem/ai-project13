@@ -78,6 +78,17 @@ class HospitalApplicationTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").get_json()["status"], "ok")
         self.assertEqual(self.client.get("/ready").get_json()["status"], "ready")
 
+    def test_startup_creates_all_model_tables_without_schema_sql_file(self):
+        model_tables_app = create_app({
+            "TESTING": True,
+            "SECRET_KEY": "test-secret-key",
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SQLALCHEMY_ENGINE_OPTIONS": {},
+        })
+        with model_tables_app.app_context():
+            tables = set(inspect(db.engine).get_table_names())
+        self.assertTrue({"users", "appointments", "medical_records"}.issubset(tables))
+
     def test_production_requires_secrets_and_normalizes_neon_url(self):
         with patch.dict("os.environ", {"APP_ENV": "production"}, clear=True):
             with self.assertRaisesRegex(RuntimeError, "SECRET_KEY"):

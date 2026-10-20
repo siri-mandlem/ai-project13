@@ -19,7 +19,6 @@ from backend.models import User
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_ROOT = PROJECT_ROOT / "frontend"
-SCHEMA_PATH = PROJECT_ROOT / "schema.sql"
 
 load_dotenv(PROJECT_ROOT / ".env")
 
@@ -48,35 +47,6 @@ def _database_uri() -> str:
         url = url.update_query_dict({"sslmode": "require"})
 
     return url.render_as_string(hide_password=False)
-
-
-def _execute_schema() -> None:
-    """Execute schema.sql automatically when the application starts."""
-    if not SCHEMA_PATH.is_file():
-        raise RuntimeError(
-            f"Database schema file not found: {SCHEMA_PATH}"
-        )
-
-    dialect = db.engine.dialect.name
-
-    # The provided schema.sql uses PostgreSQL-specific syntax.
-    if dialect != "postgresql":
-        raise RuntimeError(
-            "schema.sql contains PostgreSQL-specific SQL. "
-            "Use the SQLAlchemy models for local SQLite development."
-        )
-
-    schema_sql = SCHEMA_PATH.read_text(encoding="utf-8").strip()
-
-    if not schema_sql:
-        raise RuntimeError("schema.sql is empty.")
-
-    # Run the complete script in one transaction. CREATE TABLE IF NOT EXISTS
-    # and ALTER TABLE ... ADD COLUMN IF NOT EXISTS preserve existing data.
-    with db.engine.begin() as connection:
-        raw_connection = connection.connection.driver_connection
-        with raw_connection.cursor() as cursor:
-            cursor.execute(schema_sql)
 
 
 def _upgrade_legacy_user_columns() -> None:
@@ -237,11 +207,10 @@ def create_app(test_config: dict | None = None) -> Flask:
         ), 503
 
     with app.app_context():
-        # Create any missing tables defined by the SQLAlchemy models.
+        # Create tables from the models; no external schema file is required.
         db.create_all()
 
-        # Apply the SQL file and safely add missing legacy columns.
-        _execute_schema()
+        # Add columns absent from databases created by older app versions.
         _upgrade_legacy_user_columns()
 
         # Create the initial administrator if one does not exist.
