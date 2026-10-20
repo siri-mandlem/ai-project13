@@ -25,29 +25,33 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 def _database_uri() -> str:
     configured_uri = os.environ.get("DATABASE_URL", "").strip()
-    production = (
-        os.environ.get("APP_ENV", "").lower() == "production"
-        or os.environ.get("RENDER", "").lower() == "true"
-    )
 
     if not configured_uri:
-        if production:
-            raise RuntimeError("DATABASE_URL must be configured in production.")
-
-        instance_dir = PROJECT_ROOT / "instance"
-        instance_dir.mkdir(parents=True, exist_ok=True)
-        return f"sqlite:///{instance_dir / 'hospital.sqlite3'}"
+        raise RuntimeError(
+            "DATABASE_URL is missing. Configure your Neon PostgreSQL "
+            "connection string in the project's .env file."
+        )
 
     url = make_url(configured_uri)
 
     if url.drivername in {"postgres", "postgresql"}:
         url = url.set(drivername="postgresql+psycopg2")
 
-    if url.host and url.host.endswith(".neon.tech") and "sslmode" not in url.query:
+    if url.drivername != "postgresql+psycopg2":
+        raise RuntimeError(
+            "This application requires PostgreSQL. "
+            "Check your DATABASE_URL."
+        )
+
+    if not url.host or not url.host.endswith(".neon.tech"):
+        raise RuntimeError(
+            "DATABASE_URL must point to your Neon PostgreSQL host."
+        )
+
+    if "sslmode" not in url.query:
         url = url.update_query_dict({"sslmode": "require"})
 
     return url.render_as_string(hide_password=False)
-
 
 def _upgrade_legacy_user_columns() -> None:
     """Safely add columns missing from older users tables."""
