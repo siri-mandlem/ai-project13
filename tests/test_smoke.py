@@ -4,7 +4,7 @@ from unittest.mock import patch
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import make_url
 
-from backend.app import _database_uri, create_app
+from backend.app import _create_application_tables, _database_uri, create_app
 from backend.extensions import db
 from backend.models import Appointment, MedicalRecord, User
 
@@ -78,6 +78,12 @@ class HospitalApplicationTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").get_json()["status"], "ok")
         self.assertEqual(self.client.get("/ready").get_json()["status"], "ready")
 
+    def test_startup_creates_every_hospital_table(self):
+        with self.app.app_context():
+            _create_application_tables()
+            tables = set(inspect(db.engine).get_table_names())
+        self.assertTrue({"users", "appointments", "medical_records"}.issubset(tables))
+
     def test_startup_creates_all_model_tables_without_schema_sql_file(self):
         model_tables_app = create_app({
             "TESTING": True,
@@ -128,6 +134,10 @@ class HospitalApplicationTests(unittest.TestCase):
                         created_at DATETIME NOT NULL
                     )
                 """))
+            db.metadata.create_all(
+                bind=db.engine,
+                tables=[Appointment.__table__, MedicalRecord.__table__],
+            )
 
         with patch.object(db, "create_all", side_effect=create_legacy_users_table):
             legacy_app = create_app({

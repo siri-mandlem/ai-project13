@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash
 
 from backend.config import cors_origins
 from backend.extensions import db
-from backend.models import User
+from backend.models import Appointment, MedicalRecord, User
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -91,6 +91,30 @@ def _upgrade_legacy_user_columns() -> None:
                 raise RuntimeError(
                     f"Unsupported database dialect: {dialect}"
                 )
+
+
+def _create_application_tables() -> None:
+    db.create_all()
+    _upgrade_legacy_user_columns()
+
+    expected_tables = {
+        User.__tablename__,
+        Appointment.__tablename__,
+        MedicalRecord.__tablename__,
+    }
+    existing_tables = set(inspect(db.engine).get_table_names())
+    missing_tables = expected_tables - existing_tables
+    if missing_tables:
+        raise RuntimeError(
+            "Database initialization did not create required tables: "
+            + ", ".join(sorted(missing_tables))
+        )
+
+    app_logger = logging.getLogger(__name__)
+    app_logger.info(
+        "Database schema ready; required application tables are present: %s",
+        ", ".join(sorted(expected_tables)),
+    )
 
 
 def _seed_admin() -> None:
@@ -207,11 +231,8 @@ def create_app(test_config: dict | None = None) -> Flask:
         ), 503
 
     with app.app_context():
-        # Create tables from the models; no external schema file is required.
-        db.create_all()
-
-        # Add columns absent from databases created by older app versions.
-        _upgrade_legacy_user_columns()
+        # Importing each model registers its table before metadata creation.
+        _create_application_tables()
 
         # Create the initial administrator if one does not exist.
         _seed_admin()
