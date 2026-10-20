@@ -36,8 +36,8 @@ def _database_uri() -> str:
         return f"sqlite:///{instance_dir / 'hospital.sqlite3'}"
 
     url = make_url(configured_uri)
-    if url.drivername == "postgres":
-        url = url.set(drivername="postgresql")
+    if url.drivername in {"postgres", "postgresql"}:
+        url = url.set(drivername="postgresql+psycopg2")
     if url.host and url.host.endswith(".neon.tech") and "sslmode" not in url.query:
         url = url.update_query_dict({"sslmode": "require"})
     return url.render_as_string(hide_password=False)

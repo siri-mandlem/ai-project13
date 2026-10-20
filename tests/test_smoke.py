@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import patch
 
+from sqlalchemy.engine import make_url
+
 from backend.app import _database_uri, create_app
 from backend.extensions import db
 from backend.models import Appointment, MedicalRecord, User
@@ -88,8 +90,17 @@ class HospitalApplicationTests(unittest.TestCase):
             clear=True,
         ):
             uri = _database_uri()
-        self.assertTrue(uri.startswith("postgresql://"))
+        self.assertEqual(make_url(uri).drivername, "postgresql+psycopg2")
+        self.assertTrue(uri.startswith("postgresql+psycopg2://"))
         self.assertIn("sslmode=require", uri)
+
+        with patch.dict(
+            "os.environ",
+            {"DATABASE_URL": "postgresql://user:secret@db.example.test/hospital"},
+            clear=True,
+        ):
+            uri = _database_uri()
+        self.assertTrue(uri.startswith("postgresql+psycopg2://"))
 
     def test_patient_registration_and_role_restrictions(self):
         response = self.client.post(
